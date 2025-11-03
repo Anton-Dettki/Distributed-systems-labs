@@ -1,0 +1,8 @@
+Time for uploading: 8230.460166931152 ms
+
+Time to mass download:  15.788793563842773  ms
+
+Time to download one after another:  8411.182880401611  ms
+
+The mass download one is the **way** faster approach, as for every message to the server, there is overhead
+So if we only query once, like getBoard we get less overhead than querying for each message (4k times)
