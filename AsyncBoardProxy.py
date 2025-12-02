@@ -63,4 +63,14 @@ class storage:
         if self.websocket is not None:
             await self.websocket.close()
             self.websocket = None
+
+    async def acquire(self):
+        """Request acquiring the remote mutex. Returns True/False or "ERROR"."""
+        req = {"COMMAND": "ACQUIRE"}
+        return await self.doOperation(req)
+
+    async def release(self):
+        """Request releasing the remote mutex. Returns result or "ERROR"."""
+        req = {"COMMAND": "RELEASE"}
+        return await self.doOperation(req)
         
