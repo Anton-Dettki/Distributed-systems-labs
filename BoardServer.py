@@ -21,33 +21,35 @@ async def stub(request):
    command = request.get("COMMAND", "").upper()
    message = request.get("MESSAGE", "")
    index =  request.get("INDEX")
+   id = request.get("MYID", -1)
+   
    try:
        if command == 'PUT':
-           result = await storage.put(message)
+           result = await storage.put(message, id)
            return result
 
        elif command == 'GETBOARD':
-           board = await storage.getBoard()
+           board = await storage.getBoard(id)
            return board
        
        elif command == 'GET':
-           result = await storage.get(index)
+           result = await storage.get(index, id)
            return result
        
        elif command == 'GETNUM':
-           result = await storage.getNum()
+           result = await storage.getNum(id)
            return result
        
        elif command == 'MODIFY':
-           await storage.modify(index, message)
+           await storage.modify(index, message, id)
            return 'DONE'
        
        elif command == 'DELETE':
-           await storage.delete(index)
+           await storage.delete(index, id)
            return 'DONE'
        
        elif command == 'DELETEALL':
-           await storage.deleteAll()
+           await storage.deleteAll(id)
            return 'DONE'
  
        else:

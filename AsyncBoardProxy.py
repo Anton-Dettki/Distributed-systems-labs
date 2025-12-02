@@ -1,0 +1,66 @@
+# Information on the websocket-client is available at 
+# https://websocket-client.readthedocs.io/en/latest/
+
+import asyncio
+import json
+from websockets.asyncio.client import connect
+
+class storage: 
+    def __init__(self, port, myId): 
+        self.port = port
+        self.myId = myId
+        self.websocket = None
+       
+    async def doOperation(self, request):
+       print("doing operations")
+       request["MYID"] = self.myId
+       try:
+           if self.websocket is None:
+               self.websocket = await connect(f"ws://localhost:{self.port}")
+           await self.websocket.send(json.dumps(request,))
+           res = await self.websocket.recv()
+           return json.loads(res)
+       except Exception as e:
+           print(f"Conn error: {e}")
+           try:
+               self.websocket = await connect(f"ws://localhost:{self.port}")
+               await self.websocket.send(json.dumps(request))
+               res = await self.websocket.recv()
+               return json.loads(res)
+           except Exception as retry_e:
+               print(f"Retry conn error: {retry_e}")
+               return "ERROR"
+           
+    async def put(self, message): 
+        req = {"COMMAND": "PUT", "MESSAGE": message}
+        return await self.doOperation(req)
+       
+    async def get(self, index):
+        req = {"COMMAND": "GET", "INDEX": index}
+        return await self.doOperation(req)
+
+    async def getNum(self): 
+        req = {"COMMAND": "GETNUM"}
+        return await  self.doOperation(req)
+        
+    async def getBoard(self): 
+        req = {"COMMAND": "GETBOARD"}
+        return await self.doOperation(req)
+        
+    async def modify(self, index, message): 
+        req = {"COMMAND": "MODIFY", "INDEX": index, "MESSAGE": message}
+        return await self.doOperation(req)
+        
+    async def delete(self, index): 
+        req = {"COMMAND": "DELETE", "INDEX": index}
+        return await self.doOperation(req)
+
+    async def deleteAll(self): 
+        req = {"COMMAND": "DELETEALL"}
+        return await self.doOperation(req)
+        
+    async def close(self): 
+        if self.websocket is not None:
+            await self.websocket.close()
+            self.websocket = None
+        
