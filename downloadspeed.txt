@@ -13,3 +13,10 @@ Ex2: Time for uploading: 21.17776870727539 ms
 All Servers have the same 4 messages and all appear in correct/same order
 
 Ex2b: Time for uploading: 2467.8049087524414 ms
+
+
+LAB 3
+Ex2a: Its all same order 
+Time for uploading: 40.13991355895996 ms
+
+Ex2b: Took 9,08 seconds

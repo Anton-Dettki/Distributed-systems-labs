@@ -76,6 +76,35 @@ async def stub(request):
            except Exception as e:
                print(f"Mutex release error: {e}")
                return "ERROR"
+
+       elif command == 'AREYOUALIVE':
+           # Simple health check - always returns YES
+           return "YES"
+
+       elif command == 'ELECTION':
+           # Call election method on leader election object
+           if leader_obj is None:
+               return "ERROR"
+           try:
+               result = await leader_obj.election()
+               return result
+           except Exception as e:
+               print(f"Election error: {e}")
+               return "ERROR"
+
+       elif command == 'SETCOORDINATOR':
+           # Call setCoordinator method on leader election object
+           if leader_obj is None:
+               return "ERROR"
+           try:
+               coordinatorID = request.get("COORDINATORID")
+               if coordinatorID is None:
+                   return "ERROR"
+               await leader_obj.setCoordinator(coordinatorID)
+               return 'DONE'
+           except Exception as e:
+               print(f"SetCoordinator error: {e}")
+               return "ERROR"
  
        else:
            return "A-ERR"

@@ -73,4 +73,19 @@ class storage:
         """Request releasing the remote mutex. Returns result or "ERROR"."""
         req = {"COMMAND": "RELEASE"}
         return await self.doOperation(req)
+
+    async def areYouAlive(self):
+        """Check if the remote server is alive. Returns "YES" or "ERROR"."""
+        req = {"COMMAND": "AREYOUALIVE"}
+        return await self.doOperation(req)
+
+    async def election(self):
+        """Start election process on the remote server. Returns response or "ERROR"."""
+        req = {"COMMAND": "ELECTION"}
+        return await self.doOperation(req)
+
+    async def setCoordinator(self, coordinatorID):
+        """Set the coordinator on the remote server. Returns response or "ERROR"."""
+        req = {"COMMAND": "SETCOORDINATOR", "COORDINATORID": coordinatorID}
+        return await self.doOperation(req)
         
