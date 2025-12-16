@@ -4,32 +4,51 @@
 import asyncio
 import json
 from websockets.asyncio.client import connect
+from VectorClock import clock
 
 class storage: 
-    def __init__(self, port, myId): 
+    def __init__(self, port, myId, vectorClock=None): 
         self.port = port
         self.myId = myId
         self.websocket = None
+        self.vectorClock = vectorClock  # Vector clock object for timestamps
        
     async def doOperation(self, request):
        print("doing operations")
        request["MYID"] = self.myId
+       
+       # Add timestamp to request if vector clock is available
+       if self.vectorClock is not None:
+           request["TIME"] = self.vectorClock.getTime()
+       
        try:
            if self.websocket is None:
                self.websocket = await connect(f"ws://localhost:{self.port}")
            await self.websocket.send(json.dumps(request,))
            res = await self.websocket.recv()
-           return json.loads(res)
+           response = json.loads(res)
+           
+           # Update vector clock from response if available
+           if self.vectorClock is not None and isinstance(response, dict) and "TIME" in response:
+               self.vectorClock.updateTime(response["TIME"])
+           
+           return response
        except Exception as e:
            print(f"Conn error: {e}")
            try:
                self.websocket = await connect(f"ws://localhost:{self.port}")
                await self.websocket.send(json.dumps(request))
                res = await self.websocket.recv()
-               return json.loads(res)
+               response = json.loads(res)
+               
+               # Update vector clock from response if available
+               if self.vectorClock is not None and isinstance(response, dict) and "TIME" in response:
+                   self.vectorClock.updateTime(response["TIME"])
+               
+               return response
            except Exception as retry_e:
                print(f"Retry conn error: {retry_e}")
-               return "ERROR"
+               return {"RESULT": "ERROR"}
            
     async def put(self, message): 
         req = {"COMMAND": "PUT", "MESSAGE": message}

@@ -20,3 +20,14 @@ Ex2a: Its all same order
 Time for uploading: 40.13991355895996 ms
 
 Ex2b: Took 9,08 seconds
+
+LAB 4:
+Ex2:
+Yes, all messages have reasonable timestamps
+
+Ex3:
+
+Time for uploading: 45.20702362060547 ms
+
+Time for uploading: 8841.155052185059 ms
+

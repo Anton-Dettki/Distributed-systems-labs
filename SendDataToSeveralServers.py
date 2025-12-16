@@ -5,72 +5,70 @@ import threading
 import time
 
 
-numberMessagesPerServer = 0                  # Number of messages to be sent to each server.
-serverPorts   = [10000, 10001, 10002, 10003] # Ports of the server to which messages shall be uploaded.
+numberMessagesPerServer = 0                  
+serverPorts   = [10000, 10001, 10002, 10003]
 
-serverProxies = [BoardProxy.storage(port) for port in serverPorts] # Create Proxies for each server.
+serverProxies = [BoardProxy.storage(port) for port in serverPorts] 
 
 def uploadToServer(serverIndex): 
     myPort = serverPorts[serverIndex]
     myProxy = serverProxies[serverIndex]
     
     for i in range(numberMessagesPerServer): 
-        message = str(serverIndex) + "." + str(i)  # Create messages such as "2.3"
+        message = str(serverIndex) + "." + str(i)  
         print("Sending", message, "to", myPort)
         myProxy.put(message)
       
 
-if len(sys.argv) > 1:       # A parameter was given to the program ...
-    numberMessagesPerServer = int(sys.argv[1]) # Assume the first parameter is number of packets to sent for each server
+if len(sys.argv) > 1:      
+    numberMessagesPerServer = int(sys.argv[1]) 
 else: 
-    numberMessagesPerServer = 4 # Otherwise use default value.
+    numberMessagesPerServer = 4 
 
       
-# Delete all available data from the servers
 sp = serverProxies[0]
 sp.deleteAll()
-#while sp.getNum() > 0: 
-#    sp.delete(0)
-time.sleep(3) # Wait some time, so that the deletes are propagated to all servers.         
+
+time.sleep(3)       
                 
 print("Starting upload")        
-startTime = time.time() # Time before uploading to measure time for uploading 
+startTime = time.time()
 
-#Start threads
+
 threads = [None for i in range(len(serverProxies))]
 for i in range(len(serverProxies)): 
    threads[i] = threading.Thread(target=uploadToServer, args=(i,)) 
    threads[i].start()
 
-# Wait for threads to terminate    
 for i in range(len(serverProxies)): 
    threads[i].join()
 
-endTime = time.time() # Time after uploading to measure time for uploading 
+endTime = time.time() 
    
-time.sleep(1) # Wait 1 second to allow all servers to synchronize.        
+time.sleep(1)
    
    
-# Query and display the message boards from each server.
-# Do this only if the total number of message to display is not too big. 
-if (numberMessagesPerServer * len(serverProxies) <= 25): # Not too many message to be displayed?
+if (numberMessagesPerServer * len(serverProxies) <= 25): 
     print("Server: ", end="")  
     for port in serverPorts:
         print(f'{port:>10}', end="");
     print()        
-    boards = [s.getBoard() for s in serverProxies] # Retrieve boards from all servers
-    maxlen = max([len(b) for b in boards]) # Maximum length of one of the boards
+    boards = [s.getBoard() for s in serverProxies]
+    maxlen = max([len(b) for b in boards])
     for index in range(maxlen): 
         print(f'{index:>5}', ":", end="")
         for board in boards: 
-            if index < len(board): # Display only if there is an element with the index in the board. 
+            if index < len(board): 
                 v = board[index]
-                print(f'{v:>10}', end="")
+                if isinstance(v, list) and len(v) == 2:
+                    display_val = v[1]
+                else:
+                    display_val = v
+                print(f'{display_val:>10}', end="")
         print()
 
 print("Time for uploading:", (endTime - startTime) * 1000, "ms")
 
-# Close all proxies
 for proxy in serverProxies: 
     board = proxy.close()
     

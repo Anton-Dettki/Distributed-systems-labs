@@ -83,7 +83,9 @@ class election:
         try:
             proxy = self.proxies[serverID]
             result = await proxy.areYouAlive()
-            # Check if the response is "YES"
+            # Handle both old format ("YES") and new JSON format ({"RESULT": "OK", "ALIVE": "YES"})
+            if isinstance(result, dict):
+                return result.get("RESULT") == "OK" or result.get("ALIVE") == "YES"
             return result == "YES"
         except Exception as e:
             # Server not available or error occurred
@@ -98,6 +100,9 @@ class election:
         try:
             proxy = self.proxies[serverID]
             result = await proxy.election()
+            # Handle both old format ("Take-Over") and new JSON format ({"RESULT": "OK", "RESPONSE": "Take-Over"})
+            if isinstance(result, dict):
+                return result.get("RESPONSE", result.get("RESULT"))
             # Return the response from the server
             return result
         except Exception as e:
@@ -114,6 +119,9 @@ class election:
         try:
             proxy = self.proxies[serverID]
             result = await proxy.setCoordinator(coordinatorID)
+            # Handle both old format ("DONE") and new JSON format ({"RESULT": "OK"})
+            if isinstance(result, dict):
+                return result.get("RESULT") == "OK"
             # Check if the operation was successful
             return result == "DONE"
         except Exception as e:

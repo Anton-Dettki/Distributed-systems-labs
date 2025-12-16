@@ -67,7 +67,6 @@ class storage:
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
-                # No running event loop yet
                 return
             self._update_task = loop.create_task(self._update_task_proc())
             self._update_task_started = True
@@ -81,16 +80,13 @@ class storage:
 
             op = item[0]
 
-            # Get coordinator proxy
             try:
                 coordinator = await self.leaderElection.getCoordiator()
             except Exception:
-                # Re-enqueue and retry later
                 await self._update_queue.put(item)
                 await asyncio.sleep(0.1)
                 continue
 
-            # Acquire the mutex (retry until acquired)
             while True:
                 try:
                     got = await coordinator.acquire()
@@ -101,14 +97,11 @@ class storage:
                     break
                 await asyncio.sleep(0.1)
 
-            # We have the mutex — perform the operation
             try:
                 if op == "PUT":
                     _, message = item
-                    # Update local message board
                     await self.messageBoard.put(message, self.myID)
 
-                    # Propagate to other servers (skip self)
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
@@ -119,10 +112,8 @@ class storage:
                             
                 elif op == "MODIFY":
                     _, index, message = item
-                    # Update local message board
                     await self.messageBoard.modify(index, message, self.myID)
 
-                    # Propagate to other servers (skip self)
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
@@ -133,10 +124,8 @@ class storage:
                             
                 elif op == "DELETE":
                     _, index = item
-                    # Update local message board
                     await self.messageBoard.delete(index, self.myID)
 
-                    # Propagate to other servers (skip self)
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
@@ -146,10 +135,8 @@ class storage:
                             pass
                             
                 elif op == "DELETEALL":
-                    # Update local message board
                     await self.messageBoard.deleteAll(self.myID)
 
-                    # Propagate to other servers (skip self)
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
@@ -158,7 +145,6 @@ class storage:
                         except Exception:
                             pass
             finally:
-                # Always release the mutex (best-effort)
                 try:
                     await coordinator.release()
                 except Exception:

@@ -22,7 +22,10 @@ def cmdGet(argv):
     try:
         index = argv[1]
         message = storage.get(index)
-        print("Message", index, ":", message)
+        if isinstance(message, list) and len(message) == 2:
+            print("Message", index, ":", message[0], "-", message[1])
+        else:
+            print("Message", index, ":", message)
     except ValueError: 
         print("Message with index", index, "is not stored on server.")
     except IndexError: 
@@ -36,8 +39,13 @@ def cmdGetNum():
 
 def cmdGetBoard():
     board = storage.getBoard()
-    for index in range(len(board)): 
-        print(index, ":", board[index])
+    for index in range(len(board)):
+        message = board[index]
+        # Display message with timestamp if it's in [timestamp, text] format
+        if isinstance(message, list) and len(message) == 2:
+            print(index, ":", message[0], "-", message[1])
+        else:
+            print(index, ":", message)
 
 def cmdModify(argv): 
     try:
