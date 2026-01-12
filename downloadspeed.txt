@@ -29,5 +29,4 @@ Ex3:
 
 Time for uploading: 45.20702362060547 ms
 
-Time for uploading: 8841.155052185059 ms
-
+Time for uploading: 8841.155052185059 ms 

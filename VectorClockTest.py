@@ -25,7 +25,6 @@ def printTotalOrder(clock1, clock2):
         print(time1, "==", time2)
     
 
-
 p1 = VectorClock.clock(3, 0)
 p2 = VectorClock.clock(3, 1)
 p3 = VectorClock.clock(3, 2)
