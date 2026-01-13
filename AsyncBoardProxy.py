@@ -50,8 +50,10 @@ class storage:
                print(f"Retry conn error: {retry_e}")
                return {"RESULT": "ERROR"}
            
-    async def put(self, message): 
+    async def put(self, message, sequenceNumber=None): 
         req = {"COMMAND": "PUT", "MESSAGE": message}
+        if sequenceNumber is not None:
+            req["SEQNUM"] = sequenceNumber
         return await self.doOperation(req)
        
     async def get(self, index):
@@ -66,16 +68,22 @@ class storage:
         req = {"COMMAND": "GETBOARD"}
         return await self.doOperation(req)
         
-    async def modify(self, index, message): 
+    async def modify(self, index, message, sequenceNumber=None): 
         req = {"COMMAND": "MODIFY", "INDEX": index, "MESSAGE": message}
+        if sequenceNumber is not None:
+            req["SEQNUM"] = sequenceNumber
         return await self.doOperation(req)
         
-    async def delete(self, index): 
+    async def delete(self, index, sequenceNumber=None): 
         req = {"COMMAND": "DELETE", "INDEX": index}
+        if sequenceNumber is not None:
+            req["SEQNUM"] = sequenceNumber
         return await self.doOperation(req)
 
-    async def deleteAll(self): 
+    async def deleteAll(self, sequenceNumber=None): 
         req = {"COMMAND": "DELETEALL"}
+        if sequenceNumber is not None:
+            req["SEQNUM"] = sequenceNumber
         return await self.doOperation(req)
         
     async def close(self): 
@@ -96,6 +104,11 @@ class storage:
     async def areYouAlive(self):
         """Check if the remote server is alive. Returns "YES" or "ERROR"."""
         req = {"COMMAND": "AREYOUALIVE"}
+        return await self.doOperation(req)
+
+    async def getSequenceNumber(self):
+        """Request a sequence number from the server. Returns sequence number or "ERROR"."""
+        req = {"COMMAND": "GETSEQUENCENUMBER"}
         return await self.doOperation(req)
 
     async def election(self):

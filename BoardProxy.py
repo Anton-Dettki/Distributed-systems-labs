@@ -47,6 +47,10 @@ class storage:
     def deleteAll(self): 
         req = {"COMMAND": "DELETEALL"}
         return asyncio.run(self.doOperation(req))
+    
+    def synchronize(self, otherServerId):
+        req = {"COMMAND": "SYNCHRONIZE", "OTHERSERVERID": otherServerId}
+        return asyncio.run(self.doOperation(req))
         
     def close(self): 
         pass

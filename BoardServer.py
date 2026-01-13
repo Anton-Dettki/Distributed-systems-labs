@@ -14,6 +14,8 @@ mutex_obj = None
 leader_obj = None
 # Vector clock for timestamping messages
 vector_clock = None
+# Optional sequencer object for generating sequence numbers
+sequencer_obj = None
 
 # Port number on which the server has to be started. 
 port = -1 # Changed in function startServer
@@ -25,9 +27,11 @@ port = -1 # Changed in function startServer
 #########################################################
 async def stub(request):
    command = request.get("COMMAND", "").upper()
+   print(f"STUB received command: {command}")
    message = request.get("MESSAGE", "")
    index =  request.get("INDEX")
    id = request.get("MYID", -1)
+   seq_num = request.get("SEQNUM")
    
    # Update vector clock if timestamp is present in request
    if vector_clock is not None and "TIME" in request:
@@ -38,7 +42,10 @@ async def stub(request):
    
    try:
        if command == 'PUT':
-           result = await storage.put(message, id)
+           if seq_num is not None:
+               result = await storage.put(message, id, seq_num)
+           else:
+               result = await storage.put(message, id)
            if is_server_request:
                return {"RESULT": "OK", "TIME": vector_clock.getTime() if vector_clock else []}
            else:
@@ -66,21 +73,30 @@ async def stub(request):
                return result
        
        elif command == 'MODIFY':
-           await storage.modify(index, message, id)
+           if seq_num is not None:
+               await storage.modify(index, message, id, seq_num)
+           else:
+               await storage.modify(index, message, id)
            if is_server_request:
                return {"RESULT": "OK", "TIME": vector_clock.getTime() if vector_clock else []}
            else:
                return 'DONE'
        
        elif command == 'DELETE':
-           await storage.delete(index, id)
+           if seq_num is not None:
+               await storage.delete(index, id, seq_num)
+           else:
+               await storage.delete(index, id)
            if is_server_request:
                return {"RESULT": "OK", "TIME": vector_clock.getTime() if vector_clock else []}
            else:
                return 'DONE'
        
        elif command == 'DELETEALL':
-           await storage.deleteAll(id)
+           if seq_num is not None:
+               await storage.deleteAll(id, seq_num)
+           else:
+               await storage.deleteAll(id)
            if is_server_request:
                return {"RESULT": "OK", "TIME": vector_clock.getTime() if vector_clock else []}
            else:
@@ -178,6 +194,65 @@ async def stub(request):
                    return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
                else:
                    return "ERROR"
+
+       elif command == 'GETSEQUENCENUMBER':
+           # Get sequence number from sequencer object
+           if sequencer_obj is None:
+               if is_server_request:
+                   return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return "ERROR"
+           try:
+               seq_num = await sequencer_obj.getSequenceNumber()
+               if is_server_request:
+                   return {"RESULT": "OK", "SEQNUM": seq_num, "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return seq_num
+           except Exception as e:
+               print(f"GetSequenceNumber error: {e}")
+               if is_server_request:
+                   return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return "ERROR"
+
+       elif command == 'SYNCHRONIZE':
+           # Synchronize with another server
+           print(f"SYNCHRONIZE command received")
+           other_server_id = request.get("OTHERSERVERID")
+           print(f"  other_server_id: {other_server_id}, type: {type(other_server_id)}")
+           print(f"  senderID: {id}")
+           
+           if other_server_id is None:
+               print(f"  ERROR: other_server_id is None")
+               if is_server_request:
+                   return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return "ERROR"
+           
+           # Check if storage has synchronize method
+           if not hasattr(storage, 'synchronize'):
+               print(f"  ERROR: storage object does not have synchronize method")
+               print(f"  storage type: {type(storage)}")
+               print(f"  storage methods: {dir(storage)}")
+               if is_server_request:
+                   return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return "ERROR"
+           
+           try:
+               print(f"  Calling storage.synchronize({other_server_id}, {id})")
+               result = await storage.synchronize(other_server_id, id)
+               print(f"  Result: {result}")
+               if is_server_request:
+                   return {"RESULT": result, "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return result
+           except Exception as e:
+               print(f"Synchronize error: {e}")
+               if is_server_request:
+                   return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
+               else:
+                   return "ERROR"
  
        else:
            if is_server_request:
@@ -185,7 +260,9 @@ async def stub(request):
            else:
                return "A-ERR"
    except Exception as e:
-       print(e)
+       print(f"Exception in stub: {e}")
+       import traceback
+       traceback.print_exc()
        if is_server_request:
            return {"RESULT": "ERROR", "TIME": vector_clock.getTime() if vector_clock else []}
        else:
@@ -213,16 +290,17 @@ async def serverMain():
         await asyncio.Future() 
 
 # Called by the main module to start the server
-def startServer(portToUse, storageToUse, serverID=0, mutex=None, leader=None, vClock=None): 
+def startServer(portToUse, storageToUse, serverID=0, mutex=None, leader=None, vClock=None, sequencerParam=None): 
     global port
     global storage
-    global myID, mutex_obj, leader_obj, vector_clock
+    global myID, mutex_obj, leader_obj, vector_clock, sequencer_obj
     
     port = portToUse
     storage = storageToUse
     mutex_obj = mutex
     leader_obj = leader
     vector_clock = vClock
+    sequencer_obj = sequencerParam
     
     asyncio.run(serverMain())
     

@@ -30,3 +30,17 @@ Ex3:
 Time for uploading: 45.20702362060547 ms
 
 Time for uploading: 8841.155052185059 ms 
+
+
+LAB 5:
+Ex2 a
+4 messages: Time for uploading: 49.69215393066406 ms
+
+1000 messages: 9.21 seconds
+
+
+=== Synchronization complete ===
+
+Time for uploading: 4425.303936004639 ms
+Time for synchronization: 16901.09086036682 ms
+

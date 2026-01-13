@@ -5,7 +5,7 @@ class storage:
         self.messages = []
         self.compareFunc = compareFunc
 
-    async def put(self, message, server_id=0):
+    async def put(self, message, server_id=0, sequenceNumber=None):
         self.messages.append(message)
         # Sort messages if comparison function is provided
         if self.compareFunc is not None:
@@ -24,7 +24,7 @@ class storage:
     async def getBoard(self, server_id=0):
         return self.messages
 
-    async def modify(self, index, message, server_id=0):
+    async def modify(self, index, message, server_id=0, sequenceNumber=None):
         index = int(index)
         if 0 <= index < len(self.messages):
             self.messages[index] = message
@@ -35,14 +35,14 @@ class storage:
         else:
             raise ValueError("Index is unknown.")
 
-    async def delete(self, index, server_id=0):
+    async def delete(self, index, server_id=0, sequenceNumber=None):
         index = int(index)
         if 0 <= index < len(self.messages):
             self.messages.pop(index)
         else:
             raise ValueError("Index is unknown.")
 
-    async def deleteAll(self, server_id=0):
+    async def deleteAll(self, server_id=0, sequenceNumber=None):
         self.messages.clear()
 
     async def close(self):

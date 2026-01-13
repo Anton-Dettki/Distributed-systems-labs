@@ -1,16 +1,17 @@
 import asyncio
 
 class storage: 
-    def __init__(self, messageBoard, proxies, myID, leaderElection): 
+    def __init__(self, messageBoard, proxies, myID, leaderElection, sequencerProxy=None): 
         self.messageBoard = messageBoard
         self.proxies = proxies
         self.myID = myID
         self.leaderElection = leaderElection
+        self.sequencerProxy = sequencerProxy  # Proxy to coordinator with sequencer
         self._update_queue = asyncio.Queue()
         self._update_task_started = False
         self._update_task = None
 
-    async def put(self, message, senderID=0): 
+    async def put(self, message, senderID=0, sequenceNumber=None): 
         print(f"PUT called: message={message}, senderID={senderID}, myID={self.myID}")
         # If senderID is -1, it's from a client (no MYID in request) - enqueue it
         if senderID == -1:
@@ -22,7 +23,7 @@ class storage:
         # Otherwise this is a server-to-server propagation call
         # The originating server already holds the mutex, so just update local storage
         print(f"Server-to-server call detected, updating local storage")
-        await self.messageBoard.put(message, senderID)
+        await self.messageBoard.put(message, senderID, sequenceNumber)
         return 'DONE'
         
     async def get(self, index, senderID=0): 
@@ -34,31 +35,31 @@ class storage:
     async def getBoard(self, senderID=0): 
         return await self.messageBoard.getBoard()
         
-    async def modify(self, index, message, senderID=0): 
+    async def modify(self, index, message, senderID=0, sequenceNumber=None): 
         if senderID == -1:
             await self._update_queue.put(("MODIFY", index, message))
             self._ensure_update_task()
             return 'QUEUED'
         
-        await self.messageBoard.modify(index, message, senderID)
+        await self.messageBoard.modify(index, message, senderID, sequenceNumber)
         return 'DONE'
         
-    async def delete(self, index, senderID=0): 
+    async def delete(self, index, senderID=0, sequenceNumber=None): 
         if senderID == -1:
             await self._update_queue.put(("DELETE", index))
             self._ensure_update_task()
             return 'QUEUED'
         
-        await self.messageBoard.delete(index, senderID)
+        await self.messageBoard.delete(index, senderID, sequenceNumber)
         return 'DONE'
             
-    async def deleteAll(self, senderID=0): 
+    async def deleteAll(self, senderID=0, sequenceNumber=None): 
         if senderID == -1:
             await self._update_queue.put(("DELETEALL",))
             self._ensure_update_task()
             return 'QUEUED'
         
-        await self.messageBoard.deleteAll(senderID)
+        await self.messageBoard.deleteAll(senderID, sequenceNumber)
         return 'DONE'
     
     def _ensure_update_task(self):
@@ -98,50 +99,59 @@ class storage:
                 await asyncio.sleep(0.1)
 
             try:
+                # Get sequence number if sequencer is available
+                seq_num = None
+                if self.sequencerProxy is not None:
+                    try:
+                        seq_num = await self.sequencerProxy.getSequenceNumber()
+                        print(f"Got sequence number: {seq_num}")
+                    except Exception as e:
+                        print(f"Failed to get sequence number: {e}")
+                
                 if op == "PUT":
                     _, message = item
-                    await self.messageBoard.put(message, self.myID)
+                    await self.messageBoard.put(message, self.myID, seq_num)
 
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
                         try:
-                            await proxy.put(message)
+                            await proxy.put(message, seq_num)
                         except Exception:
                             pass
                             
                 elif op == "MODIFY":
                     _, index, message = item
-                    await self.messageBoard.modify(index, message, self.myID)
+                    await self.messageBoard.modify(index, message, self.myID, seq_num)
 
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
                         try:
-                            await proxy.modify(index, message)
+                            await proxy.modify(index, message, seq_num)
                         except Exception:
                             pass
                             
                 elif op == "DELETE":
                     _, index = item
-                    await self.messageBoard.delete(index, self.myID)
+                    await self.messageBoard.delete(index, self.myID, seq_num)
 
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
                         try:
-                            await proxy.delete(index)
+                            await proxy.delete(index, seq_num)
                         except Exception:
                             pass
                             
                 elif op == "DELETEALL":
-                    await self.messageBoard.deleteAll(self.myID)
+                    await self.messageBoard.deleteAll(self.myID, seq_num)
 
                     for i, proxy in enumerate(self.proxies):
                         if i == self.myID:
                             continue
                         try:
-                            await proxy.deleteAll()
+                            await proxy.deleteAll(seq_num)
                         except Exception:
                             pass
             finally:
