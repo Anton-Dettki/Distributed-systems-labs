@@ -57,24 +57,10 @@ endTimeUpload = time.time() # Time after uploading to measure time for uploading
    
 time.sleep(1) # Wait some time.         
 
-#**************************************************************************
-#*********************** Synchronize the servers **************************
-#**************************************************************************
-
-startTimeSynchronization = time.time() # Time before synchronizing servers
-   
-#---------------------------------------------------#   
-# Synchronize all servers with each other           #
-# To ensure all 4 servers have all 16 messages,     #
-# we synchronize pairs to form a complete graph:    #
-# - Server 0 with 1, 2, 3                           #
-# - Server 1 with 2, 3                              #
-# - Server 2 with 3                                 #
-#---------------------------------------------------#   
+startTimeSynchronization = time.time() 
 
 print("\n=== Synchronizing all servers ===\n")
 
-# Synchronize server 0 with servers 1, 2, and 3
 print("Synchronizing server 0 with server 1...")
 result = serverProxies[0].synchronize(1)
 print(f"Result: {result}")
@@ -87,7 +73,6 @@ print("Synchronizing server 0 with server 3...")
 result = serverProxies[0].synchronize(3)
 print(f"Result: {result}")
 
-# Synchronize server 1 with servers 2 and 3
 print("\nSynchronizing server 1 with server 2...")
 result = serverProxies[1].synchronize(2)
 print(f"Result: {result}")
@@ -96,7 +81,6 @@ print("Synchronizing server 1 with server 3...")
 result = serverProxies[1].synchronize(3)
 print(f"Result: {result}")
 
-# Synchronize server 2 with server 3
 print("\nSynchronizing server 2 with server 3...")
 result = serverProxies[2].synchronize(3)
 print(f"Result: {result}")
@@ -111,9 +95,8 @@ time.sleep(3) # Wait some time.
 #**************************************************************************
 #************ Download and display messages from all servers **************
 #**************************************************************************
-# Do this only if the total number of message to display is not too big. 
-if (numberMessagesPerServer * len(serverProxies) <= 25): # Not too many message to be displayed?
-    boards = [s.getBoard() for s in serverProxies] # Retrieve boards from all servers
+if (numberMessagesPerServer * len(serverProxies) <= 25):
+    boards = [s.getBoard() for s in serverProxies] 
     maxlen = max([len(b) for b in boards]) # Maximum length of one of the boards
     maxlenMessage =  max([len(str(message)) for board in boards for message in board]) # Maximum no of characters to draw a message
     fillerString   = "-" * maxlenMessage # String to be displayed if a message is missing in a message board. 
@@ -137,7 +120,7 @@ if (numberMessagesPerServer * len(serverProxies) <= 25): # Not too many message 
 #**************************************************************************
 #**************************** Display times  ******************************
 #**************************************************************************
-
+x
 print("Time for uploading:", (endTimeUpload - startTimeUpload) * 1000, "ms")
 print("Time for synchronization:", (endTimeSynchronization - startTimeSynchronization) * 1000, "ms")
 

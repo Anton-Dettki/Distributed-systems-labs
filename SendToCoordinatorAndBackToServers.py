@@ -34,12 +34,14 @@ class storage:
 
     async def put(self, message, server_id=-1):
         if self._is_from_coordinator(server_id):
+            # This is a broadcast from coordinator, just update local storage
             await self.asyncLocalStorage.put(message, server_id)
-        elif self._is_from_client(server_id):
-            if self._is_coordinator():
-                await self._broadcast_to_all_servers('put', message)
-            else:
-                await self._forward_to_coordinator('put', message)
+        elif self._is_coordinator():
+            # I am the coordinator, broadcast to all servers
+            await self._broadcast_to_all_servers('put', message)
+        else:
+            # I am not the coordinator, forward to coordinator
+            await self._forward_to_coordinator('put', message)
 
     async def get(self, index, server_id=-1):
         return await self.asyncLocalStorage.get(index, server_id)
@@ -52,30 +54,36 @@ class storage:
 
     async def modify(self, index, message, server_id=-1):
         if self._is_from_coordinator(server_id):
+            # This is a broadcast from coordinator, just update local storage
             await self.asyncLocalStorage.modify(index, message, server_id)
-        elif self._is_from_client(server_id):
-            if self._is_coordinator():
-                await self._broadcast_to_all_servers('modify', index, message)
-            else:
-                await self._forward_to_coordinator('modify', index, message)
+        elif self._is_coordinator():
+            # I am the coordinator, broadcast to all servers
+            await self._broadcast_to_all_servers('modify', index, message)
+        else:
+            # I am not the coordinator, forward to coordinator
+            await self._forward_to_coordinator('modify', index, message)
 
     async def delete(self, index, server_id=-1):
         if self._is_from_coordinator(server_id):
+            # This is a broadcast from coordinator, just update local storage
             await self.asyncLocalStorage.delete(index, server_id)
-        elif self._is_from_client(server_id):
-            if self._is_coordinator():
-                await self._broadcast_to_all_servers('delete', index)
-            else:
-                await self._forward_to_coordinator('delete', index)
+        elif self._is_coordinator():
+            # I am the coordinator, broadcast to all servers
+            await self._broadcast_to_all_servers('delete', index)
+        else:
+            # I am not the coordinator, forward to coordinator
+            await self._forward_to_coordinator('delete', index)
 
     async def deleteAll(self, server_id=-1):
         if self._is_from_coordinator(server_id):
+            # This is a broadcast from coordinator, just update local storage
             await self.asyncLocalStorage.deleteAll(server_id)
-        elif self._is_from_client(server_id):
-            if self._is_coordinator():
-                await self._broadcast_to_all_servers('deleteAll')
-            else:
-                await self._forward_to_coordinator('deleteAll')
+        elif self._is_coordinator():
+            # I am the coordinator, broadcast to all servers
+            await self._broadcast_to_all_servers('deleteAll')
+        else:
+            # I am not the coordinator, forward to coordinator
+            await self._forward_to_coordinator('deleteAll')
 
     async def close(self):
         await self.asyncLocalStorage.close()

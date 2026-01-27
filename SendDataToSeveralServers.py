@@ -7,8 +7,9 @@ import time
 
 numberMessagesPerServer = 0                  # Number of messages to be sent to each server.
 # serverPorts   = [10000] # Ports of the server to which messages shall be uploaded.
-serverPorts   = [10000, 10001, 10002, 10003] # Ports of the server to which messages shall be uploaded.
+# serverPorts   = [10000, 10001, 10002, 10003] # Ports of the server to which messages shall be uploaded.
 # serverPorts   = [10000, 10001, 10002] # Ports of the server to which messages shall be uploaded.
+serverPorts   = [10001, 10002] # Ports of the server to which messages shall be uploaded.
 
 serverProxies = [BoardProxy.storage(port) for port in serverPorts] # Create Proxies for each server.
 

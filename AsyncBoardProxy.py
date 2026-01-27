@@ -3,15 +3,16 @@
 
 import asyncio
 import json
-from websockets.asyncio.client import connect
+from websockets.asyncio import client
 from VectorClock import clock
 
 class storage: 
-    def __init__(self, port, myId, vectorClock=None): 
+    def __init__(self, port, myId, vectorClock=None, websocketconnect=client.connect): 
         self.port = port
         self.myId = myId
         self.websocket = None
         self.vectorClock = vectorClock  # Vector clock object for timestamps
+        self.websocketconnect = websocketconnect  # Configurable connect function
        
     async def doOperation(self, request):
        print("doing operations")
@@ -23,7 +24,7 @@ class storage:
        
        try:
            if self.websocket is None:
-               self.websocket = await connect(f"ws://localhost:{self.port}")
+               self.websocket = await self.websocketconnect(f"ws://localhost:{self.port}")
            await self.websocket.send(json.dumps(request,))
            res = await self.websocket.recv()
            response = json.loads(res)
@@ -36,7 +37,7 @@ class storage:
        except Exception as e:
            print(f"Conn error: {e}")
            try:
-               self.websocket = await connect(f"ws://localhost:{self.port}")
+               self.websocket = await self.websocketconnect(f"ws://localhost:{self.port}")
                await self.websocket.send(json.dumps(request))
                res = await self.websocket.recv()
                response = json.loads(res)
